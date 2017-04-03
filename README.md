@@ -1,6 +1,6 @@
 # flapAI
 
-Notre Dame Introduction to Engineering Systems II Group 5 Section 2
+Notre Dame Introduction to Engineering Systems II Group 5 Section 2                                    
 by Cara Ravasio, John Miller, Kevin Grief, Miles Bimrose, Patrick Bouchon
 
 Instructions on how to clone and use this repository:                   
