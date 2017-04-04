@@ -270,8 +270,38 @@ while 1
         clear all;
         return;
     end
+    isAlive=~gameover;
+    %isAlive is true if the bird is alive
+    xdist = getxDist();
+    ydist = getyDist();
+    state=[xdist,ydist,isAlive];
+    disp(state);
+    %State is the state array, this will be fed into the learning
+    %formula.
 end
 end
+%% Get AI Constants    
+%The constants come from the widths of the pipes
+function xdist = getxDist()
+    if (Tubes.ScreenX(Tubes.FrontP)) >= 21
+        xdist=(Tubes.ScreenX(Tubes.FrontP)-45)+24;
+    elseif (Tubes.ScreenX(Tubes.FrontP)) < 21
+        xdist=(Tubes.ScreenX(Tubes.FrontP))+83;
+    end
+end
+%xdist is the horizontal distance to the BACK EDGE of the next pipe
+
+function ydist = getyDist()
+    if (Tubes.ScreenX(Tubes.FrontP)) >= 21
+        ydist=(177-(Tubes.VOffset(Tubes.FrontP)-1))-Bird.ScreenPos(2);
+    elseif (Tubes.ScreenX(Tubes.FrontP) < 21) && (Tubes.FrontP == 3)
+        ydist=(177-(Tubes.VOffset(1)))-Bird.ScreenPos(2);
+    else
+        ydist=(177-(Tubes.VOffset(Tubes.FrontP+1)))-Bird.ScreenPos(2);
+    end
+%ydist is the vertical distance from the bottom of the next tube
+end
+
     function initVariables()
         Sprites = load('sprites2.mat');
         GAME.MAX_FRAME_SKIP = 5;
