@@ -93,6 +93,7 @@ Best = 0;
 %% -- Game Logic --
 initVariables();
 initWindow();
+statePrev = 0; %Initialize statePrev variable
 
 if ShowFPS
     fps_text_handle = text(10,10, 'FPS:60.0', 'Visible', 'off');
@@ -275,7 +276,10 @@ while 1
     xdist = getxDist();
     ydist = getyDist();
     state=[xdist,ydist,isAlive];
-    disp(state);
+    if statePrev(1) ~= state(1) || statePrev(2) ~= state(2) || statePrev(3) ~= state(3)
+        disp(state);
+    end
+    statePrev = state;
     %State is the state array, this will be fed into the learning
     %formula.
 end
@@ -284,20 +288,20 @@ end
 %The constants come from the widths of the pipes
 function xdist = getxDist()
     if (Tubes.ScreenX(Tubes.FrontP)) >= 21
-        xdist=(Tubes.ScreenX(Tubes.FrontP)-45)+24;
+        xdist=round(Tubes.ScreenX(Tubes.FrontP)-45)+24;
     elseif (Tubes.ScreenX(Tubes.FrontP)) < 21
-        xdist=(Tubes.ScreenX(Tubes.FrontP))+83;
+        xdist=round(Tubes.ScreenX(Tubes.FrontP))+83;
     end
 end
 %xdist is the horizontal distance to the BACK EDGE of the next pipe
 
 function ydist = getyDist()
     if (Tubes.ScreenX(Tubes.FrontP)) >= 21
-        ydist=(177-(Tubes.VOffset(Tubes.FrontP)-1))-Bird.ScreenPos(2);
+        ydist=round((177-(Tubes.VOffset(Tubes.FrontP)-1))-Bird.ScreenPos(2));
     elseif (Tubes.ScreenX(Tubes.FrontP) < 21) && (Tubes.FrontP == 3)
-        ydist=(177-(Tubes.VOffset(1)))-Bird.ScreenPos(2);
+        ydist=round((177-(Tubes.VOffset(1)))-Bird.ScreenPos(2));
     else
-        ydist=(177-(Tubes.VOffset(Tubes.FrontP+1)))-Bird.ScreenPos(2);
+        ydist=round((177-(Tubes.VOffset(Tubes.FrontP+1)))-Bird.ScreenPos(2));
     end
 %ydist is the vertical distance from the bottom of the next tube
 end
