@@ -159,7 +159,7 @@ while 1
     curTime = toc(stageStartTime);
     while (curTime >= ((CurrentFrameNo) * GAME.FRAME_DURATION) && loops < GAME.MAX_FRAME_SKIP)
         
-        if FlyKeyStatus  % If left key is pressed     
+        if FlyKeyStatus  % If left key is pressed
             if ~gameover
                 Bird.SpeedY = -2.5; % -2.5;
                 FlyKeyStatus = false;
@@ -271,6 +271,8 @@ while 1
         clear all;
         return;
     end
+
+%% Q Learning
     isAlive=~gameover;
     %isAlive is true if the bird is alive
     xdist = getxDist();
