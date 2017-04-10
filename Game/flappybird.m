@@ -105,43 +105,43 @@ CurrentFrameNo = double(0);
 
 fade_time = cumsum([1 3 1]);
 
-pause(0.5);
-logo_stl = text(72, 100, 'Stellari Studio', 'FontSize', 20, 'Color',[1 1 1], 'HorizontalAlignment', 'center');
-logo_and = text(72, 130, 'and', 'FontSize', 10, 'Color',[1 1 1], 'HorizontalAlignment', 'center');
-logo_ilovematlabcn = image([22 122], [150 180], Sprites.MatlabLogo, 'AlphaData',0);
-stageStartTime = tic;
-while 1
-    loops = 0;
-    curTime = toc(stageStartTime);
-    while (curTime >= ((CurrentFrameNo) * GAME.FRAME_DURATION) && loops < GAME.MAX_FRAME_SKIP)
-        if curTime < fade_time(1)
-            set(logo_stl, 'Color',1 - [1 1 1].*max(min(curTime/fade_time(1), 1),0));
-            set(logo_ilovematlabcn, 'AlphaData', max(min(curTime/fade_time(1), 1),0));
-            set(logo_and, 'Color',1 - [1 1 1].*max(min(curTime/fade_time(1), 1),0));
-        elseif curTime < fade_time(2)
-            set(logo_stl, 'Color',[0 0 0]);
-            set(logo_ilovematlabcn, 'AlphaData', 1);
-            set(logo_and, 'Color', [0 0 0]);
-        else
-            set(logo_stl, 'Color',[1 1 1].*max(min((curTime-fade_time(2))/(fade_time(3) - fade_time(2)), 1),0));
-            set(logo_ilovematlabcn, 'AlphaData',1-max(min((curTime-fade_time(2))/(fade_time(3) - fade_time(2)), 1),0));
-            set(logo_and, 'Color', [1 1 1].*max(min((curTime-fade_time(2))/(fade_time(3) - fade_time(2)), 1),0));
-        end
-        CurrentFrameNo = CurrentFrameNo + 1;
-       loops = loops + 1;
-       frame_updated = true;
-    end
-    if frame_updated
-        drawnow;
-    end
-    if curTime > fade_time
-        break;
-    end
-end
-delete(logo_stl);
-delete(logo_ilovematlabcn);
-delete(logo_and);
-pause(1);
+% pause(0.5);
+% logo_stl = text(72, 100, 'Stellari Studio', 'FontSize', 20, 'Color',[1 1 1], 'HorizontalAlignment', 'center');
+% logo_and = text(72, 130, 'and', 'FontSize', 10, 'Color',[1 1 1], 'HorizontalAlignment', 'center');
+% logo_ilovematlabcn = image([22 122], [150 180], Sprites.MatlabLogo, 'AlphaData',0);
+% stageStartTime = tic;
+% while 1
+%     loops = 0;
+%     curTime = toc(stageStartTime);
+%     while (curTime >= ((CurrentFrameNo) * GAME.FRAME_DURATION) && loops < GAME.MAX_FRAME_SKIP)
+%         if curTime < fade_time(1)
+%             set(logo_stl, 'Color',1 - [1 1 1].*max(min(curTime/fade_time(1), 1),0));
+%             set(logo_ilovematlabcn, 'AlphaData', max(min(curTime/fade_time(1), 1),0));
+%             set(logo_and, 'Color',1 - [1 1 1].*max(min(curTime/fade_time(1), 1),0));
+%         elseif curTime < fade_time(2)
+%             set(logo_stl, 'Color',[0 0 0]);
+%             set(logo_ilovematlabcn, 'AlphaData', 1);
+%             set(logo_and, 'Color', [0 0 0]);
+%         else
+%             set(logo_stl, 'Color',[1 1 1].*max(min((curTime-fade_time(2))/(fade_time(3) - fade_time(2)), 1),0));
+%             set(logo_ilovematlabcn, 'AlphaData',1-max(min((curTime-fade_time(2))/(fade_time(3) - fade_time(2)), 1),0));
+%             set(logo_and, 'Color', [1 1 1].*max(min((curTime-fade_time(2))/(fade_time(3) - fade_time(2)), 1),0));
+%         end
+%         CurrentFrameNo = CurrentFrameNo + 1;
+%        loops = loops + 1;
+%        frame_updated = true;
+%     end
+%     if frame_updated
+%         drawnow;
+%     end
+%     if curTime > fade_time
+%         break;
+%     end
+% end
+% delete(logo_stl);
+% delete(logo_ilovematlabcn);
+% delete(logo_and);
+% pause(1);
 
 % Main Game
 while 1
