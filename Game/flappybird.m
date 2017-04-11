@@ -93,7 +93,8 @@ Best = 0;
 %% -- Game Logic --
 initVariables();
 initWindow();
-statePrev = 0; %Initialize statePrev variable
+statePrev = [250, 0, 1]; %Initialize statePrev variable
+stateCount = zeros(300,400);
 
 if ShowFPS
     fps_text_handle = text(10,10, 'FPS:60.0', 'Visible', 'off');
@@ -147,6 +148,8 @@ fade_time = cumsum([1 3 1]);
 % Main Game
 while 1
 initGame();
+Q = zeros(300,400,2);
+action = 0;
 CurrentFrameNo = double(0);
 collide = false;
 fall_to_bottom = false;
@@ -277,9 +280,46 @@ while 1
     %isAlive is true if the bird is alive
     xdist = getxDist();
     ydist = getyDist();
+    
     state=[xdist,ydist,isAlive];
+    if xdist < 400
+        xIndex = xdist + 1;
+    end
+    
+    if ydist >= -200 && ydist < 200
+        yIndex = ydist + 201;
+    end
+    
+    if statePrev(1) < 400
+        xIndexOld = statePrev(1) + 1;
+    end
+    
+    if statePrev(2) >= -200 && ydist < 200
+        yIndexOld = statePrev(2) + 201;
+    end
+    
     if statePrev(1) ~= state(1) || statePrev(2) ~= state(2) || statePrev(3) ~= state(3)
         disp(state);
+        %disp([xIndex,yIndex,xIndexOld,yIndexOld]);
+        if isAlive
+            R = 15;
+        else
+            R = -1000;
+        end
+        stateCount(xIndex,yIndex) = stateCount(xIndex,yIndex) + 1;
+        alpha = 1/(1+stateCount(xIndex,yIndex));
+        actionIndex = action + 1;
+        Qtemp = Q(xIndexOld, yIndexOld, actionIndex) + alpha * (R * max(Q(xIndex,yIndex,:)) - Q(xIndexOld, yIndexOld, actionIndex));
+        if Qtemp <= 10000
+            Q(xIndexOld, yIndexOld, actionIndex) = Qtemp;
+        end
+        
+        if Q(xIndex,yIndex,1) < Q(xIndexOld,yIndexOld,2)
+            action = 1;
+            FlyKeyStatus = true;
+        else
+            action = 0;
+        end        
     end
     statePrev = state;
     %State is the state array, this will be fed into the learning
