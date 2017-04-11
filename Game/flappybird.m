@@ -148,7 +148,7 @@ fade_time = cumsum([1 3 1]);
 % Main Game
 while 1
 initGame();
-Q = zeros(300,400,2);
+Q = zeros(300,400,2); %initialize blank Q matrix
 action = 0;
 CurrentFrameNo = double(0);
 collide = false;
@@ -281,20 +281,21 @@ while 1
     xdist = getxDist();
     ydist = getyDist();
     
-    state=[xdist,ydist,isAlive];
-    if xdist < 400
+    state=[xdist,ydist,isAlive]; %store state value
+    
+    if xdist < 400 %set xindex for Q matrix
         xIndex = xdist + 1;
     end
     
-    if ydist >= -200 && ydist < 200
+    if ydist >= -200 && ydist < 200 %set yindex for Q matrix
         yIndex = ydist + 201;
     end
     
-    if statePrev(1) < 400
+    if statePrev(1) < 400 %set old x index for comparison
         xIndexOld = statePrev(1) + 1;
     end
     
-    if statePrev(2) >= -200 && ydist < 200
+    if statePrev(2) >= -200 && ydist < 200 %set old y index for comparison
         yIndexOld = statePrev(2) + 201;
     end
     
