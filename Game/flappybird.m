@@ -275,7 +275,7 @@ while 1
         return;
     end
 
-%% Q Learning
+    %% Q Learning
     isAlive=~gameover;
     %isAlive is true if the bird is alive
     xdist = getxDist();
@@ -319,7 +319,7 @@ while 1
             FlyKeyStatus = true;
         else
             action = 0;
-        end        
+        end
     end
     statePrev = state;
     %State is the state array, this will be fed into the learning
