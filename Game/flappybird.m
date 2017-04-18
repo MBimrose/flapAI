@@ -219,7 +219,6 @@ while 1
             csvwrite('Q.csv',Q);
             if abs(Bird.Angle - pi/2) < 1e-3
                 fall_to_bottom = true;
-                FlyKeyStatus = true;
             end
        end
 
@@ -312,7 +311,7 @@ while 1
     end
     
     if statePrev(1) ~= state(1) || statePrev(2) ~= state(2) || statePrev(3) ~= state(3)
-        disp(state);
+        %disp(state);
         %disp([xIndex,yIndex,xIndexOld,yIndexOld]);
         disp(nnz(Q));
         if isAlive
@@ -323,8 +322,8 @@ while 1
         stateCount(xIndex,yIndex) = stateCount(xIndex,yIndex) + 1;
         alpha = 1/(1+stateCount(xIndex,yIndex));
         actionIndex = action + 1;
-        %Qtemp = Q(xIndexOld, yIndexOld, actionIndex) + alpha * (R * max(Q(xIndex,yIndex,:)) - Q(xIndexOld, yIndexOld, actionIndex));
-        Qtemp = R + alpha * max(Q(xIndex,yIndex,:));
+        Qtemp = Q(xIndexOld, yIndexOld, actionIndex) + alpha * (R + max(Q(xIndex, yIndex, :)) - Q(xIndexOld,yIndexOld,actionIndex));
+        %Qtemp = R + alpha * max(Q(xIndex,yIndex,:));
         if Qtemp <= 10000
             Q(xIndexOld, yIndexOld, actionIndex) = Qtemp;
         end
@@ -335,6 +334,9 @@ while 1
         else
             action = 0;
         end
+    end
+    if isAlive == 0
+        FlyKeyStatus = true;
     end
     statePrev = state;
     %State is the state array, this will be fed into the learning
