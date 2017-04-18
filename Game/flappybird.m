@@ -5,7 +5,6 @@ GameVer = '1.0';          % The first full playable game
 
 %% Constant Definitions:
 GAME.MAX_FRAME_SKIP = [];
-
 GAME.RESOLUTION = [];       % Game Resolution, default at [256 144]
 GAME.WINDOW_SCALE = 2;     % The actual size of the window divided by resolution
 GAME.FLOOR_TOP_Y = [];      % The y position of upper crust of the floor.
