@@ -93,6 +93,17 @@ Best = 0;
 %% -- Game Logic --
 initVariables();
 initWindow();
+QRough = csvread('Q.csv'); %initialize blank Q matrix
+[row,col] = size(QRough);
+for j = 1:row
+    for k = 1:col
+        if k <= 400
+            Q(j,k,1) = QRough(j,k);
+        else
+            Q(j,k-400,2) = QRough(j,k);
+        end
+    end
+end
 statePrev = [250, 0, 1]; %Initialize statePrev variable
 stateCount = zeros(300,400);
 
@@ -148,7 +159,6 @@ fade_time = cumsum([1 3 1]);
 % Main Game
 while 1
 initGame();
-Q = zeros(300,400,2); %initialize blank Q matrix
 action = 0;
 CurrentFrameNo = double(0);
 collide = false;
@@ -161,7 +171,6 @@ while 1
     loops = 0;
     curTime = toc(stageStartTime);
     while (curTime >= ((CurrentFrameNo) * GAME.FRAME_DURATION) && loops < GAME.MAX_FRAME_SKIP)
-        
         if FlyKeyStatus  % If left key is pressed
             if ~gameover
                 Bird.SpeedY = -2.5; % -2.5;
@@ -182,6 +191,7 @@ while 1
         end
         if Flags.PreGame
             processCPUBird;
+            FlyKeyStatus = true;
         else
             processBird;
             Bird.ScrollX = Bird.ScrollX + 1;
@@ -206,9 +216,10 @@ while 1
        if Bird.ScreenPos(2) >= 200-5;
             Bird.ScreenPos(2) = 200-5;
             gameover = true;
+            csvwrite('Q.csv',Q);
             if abs(Bird.Angle - pi/2) < 1e-3
                 fall_to_bottom = true;
-                FlyKeyStatus = false;
+                FlyKeyStatus = true;
             end
        end
 
@@ -271,6 +282,7 @@ while 1
        
     if CloseReq    
         delete(MainFigureHdl);
+        csvwrite('Q.csv',Q);
         clear all;
         return;
     end
@@ -302,6 +314,7 @@ while 1
     if statePrev(1) ~= state(1) || statePrev(2) ~= state(2) || statePrev(3) ~= state(3)
         disp(state);
         %disp([xIndex,yIndex,xIndexOld,yIndexOld]);
+        disp(nnz(Q));
         if isAlive
             R = 15;
         else
@@ -310,12 +323,13 @@ while 1
         stateCount(xIndex,yIndex) = stateCount(xIndex,yIndex) + 1;
         alpha = 1/(1+stateCount(xIndex,yIndex));
         actionIndex = action + 1;
-        Qtemp = Q(xIndexOld, yIndexOld, actionIndex) + alpha * (R * max(Q(xIndex,yIndex,:)) - Q(xIndexOld, yIndexOld, actionIndex));
+        %Qtemp = Q(xIndexOld, yIndexOld, actionIndex) + alpha * (R * max(Q(xIndex,yIndex,:)) - Q(xIndexOld, yIndexOld, actionIndex));
+        Qtemp = R + alpha * max(Q(xIndex,yIndex,:));
         if Qtemp <= 10000
             Q(xIndexOld, yIndexOld, actionIndex) = Qtemp;
         end
         
-        if Q(xIndex,yIndex,1) < Q(xIndexOld,yIndexOld,2)
+        if Q(xIndex,yIndex,1) < Q(xIndex,yIndex,2)
             action = 1;
             FlyKeyStatus = true;
         else
