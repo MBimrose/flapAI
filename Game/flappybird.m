@@ -92,10 +92,11 @@ Best = 0;
 %% -- Game Logic --
 initVariables();
 initWindow();
+maxScore = 0;
 QRough = csvread('Q.csv'); %initialize blank Q matrix
 [row,col] = size(QRough);
-Q = zeros(300,400,2);
-for j = 1:row
+Q = zeros(300,400,2); %Make Q matrix size to save initialization time
+for j = 1:row   %index 2D Q matrix to 3D
     for k = 1:col
         if k <= 400
             Q(j,k,1) = QRough(j,k);
@@ -104,8 +105,9 @@ for j = 1:row
         end
     end
 end
+trial = Q(300,400,2);
 statePrev = [250, 0, 1]; %Initialize statePrev variable
-stateCount = zeros(300,400);
+stateCount = zeros(300,400); %Initialize stateCount for alpha value
 
 if ShowFPS
     fps_text_handle = text(10,10, 'FPS:60.0', 'Visible', 'off');
@@ -113,51 +115,10 @@ if ShowFPS
     total_frame_update = 0;
 end
 
-% % Show flash screen
-% CurrentFrameNo = double(0);
-% fade_time = cumsum([1 3 1]);
-% pause(0.5);
-% logo_stl = text(72, 100, 'Stellari Studio', 'FontSize', 20, 'Color',[1 1 1], 'HorizontalAlignment', 'center');
-% logo_and = text(72, 130, 'and', 'FontSize', 10, 'Color',[1 1 1], 'HorizontalAlignment', 'center');
-% logo_ilovematlabcn = image([22 122], [150 180], Sprites.MatlabLogo, 'AlphaData',0);
-% stageStartTime = tic;
-% while 1
-%     loops = 0;
-%     curTime = toc(stageStartTime);
-%     while (curTime >= ((CurrentFrameNo) * GAME.FRAME_DURATION) && loops < GAME.MAX_FRAME_SKIP)
-%         if curTime < fade_time(1)
-%             set(logo_stl, 'Color',1 - [1 1 1].*max(min(curTime/fade_time(1), 1),0));
-%             set(logo_ilovematlabcn, 'AlphaData', max(min(curTime/fade_time(1), 1),0));
-%             set(logo_and, 'Color',1 - [1 1 1].*max(min(curTime/fade_time(1), 1),0));
-%         elseif curTime < fade_time(2)
-%             set(logo_stl, 'Color',[0 0 0]);
-%             set(logo_ilovematlabcn, 'AlphaData', 1);
-%             set(logo_and, 'Color', [0 0 0]);
-%         else
-%             set(logo_stl, 'Color',[1 1 1].*max(min((curTime-fade_time(2))/(fade_time(3) - fade_time(2)), 1),0));
-%             set(logo_ilovematlabcn, 'AlphaData',1-max(min((curTime-fade_time(2))/(fade_time(3) - fade_time(2)), 1),0));
-%             set(logo_and, 'Color', [1 1 1].*max(min((curTime-fade_time(2))/(fade_time(3) - fade_time(2)), 1),0));
-%         end
-%         CurrentFrameNo = CurrentFrameNo + 1;
-%        loops = loops + 1;
-%        frame_updated = true;
-%     end
-%     if frame_updated
-%         drawnow;
-%     end
-%     if curTime > fade_time
-%         break;
-%     end
-% end
-% delete(logo_stl);
-% delete(logo_ilovematlabcn);
-% delete(logo_and);
-% pause(1);
-
 % Main Game
 while 1
 initGame();
-action = 0;
+action = 0; %set action state to 0 for Q learning
 CurrentFrameNo = double(0);
 collide = false;
 fall_to_bottom = false;
@@ -188,10 +149,12 @@ while 1
             end
         end
         if Flags.PreGame
-            csvwrite('Q.csv',Q);
+            trial = trial + 1;
+            Q(300,400,2) = trial;
+            csvwrite('Q.csv',Q); %save on beginning of run
             processCPUBird;
-            FlyKeyStatus = true;
-            DeathIndex = true;
+            FlyKeyStatus = true; %avoid starting screen
+            DeathIndex = true; %setup death index so it does not overwrite Q matrix values while dead
         else
             processBird;
             Bird.ScrollX = Bird.ScrollX + 1;
@@ -223,7 +186,6 @@ while 1
                 fall_to_bottom = true;
             end
        end
-
     end
     
     %% Redraw the frame if the world has been processed
@@ -242,7 +204,7 @@ while 1
         curScoreString = sprintf('%d',(Score));
         set(ScoreInfoForeHdl, 'String', curScoreString);
         set(ScoreInfoBackHdl, 'String', curScoreString);
-        %drawnow;
+        %drawnow; %comment out to accelerate learning
         frame_updated = false;
         c = toc(stageStartTime);
         if ShowFPS
@@ -283,12 +245,13 @@ while 1
        
     if CloseReq    
         delete(MainFigureHdl);
-        csvwrite('Q.csv',Q);
+        csvwrite('Q.csv',Q);    %save on close request
         clear all;
         return;
     end
 
     %% Q Learning
+        
     isAlive=~gameover;
     %isAlive is true if the bird is alive
     xdist = getxDist();
@@ -316,8 +279,13 @@ while 1
     
     if statePrev(1) ~= state(1) || statePrev(2) ~= state(2) || statePrev(3) ~= state(3)
         %disp(state);
+        %disp(trial);
         %disp([xIndex,yIndex,xIndexOld,yIndexOld]);
         disp(nnz(Q));
+        if maxScore < Score
+            maxScore = Score;
+        end
+        disp(maxScore);
         if isAlive
             R = 15;
         else
@@ -327,7 +295,6 @@ while 1
         alpha = 1/(1+stateCount(xIndex,yIndex));
         actionIndex = action + 1;
         Qtemp = Q(xIndexOld, yIndexOld, actionIndex) + alpha * (R + max(Q(xIndex, yIndex,:)) - Q(xIndexOld,yIndexOld, actionIndex));
-        %Qtemp = R + alpha * max(Q(xIndex,yIndex,:));
         if Qtemp <= 10000
             Q(xIndexOld, yIndexOld, actionIndex) = Qtemp;
         end
@@ -378,7 +345,7 @@ end
         GAME.WINDOW_RES = [256 144];
         GAME.FLOOR_HEIGHT = 56;
         GAME.FLOOR_TOP_Y = GAME.RESOLUTION(1) - GAME.FLOOR_HEIGHT + 1;
-        GAME.N_UPDATE_PERSEC = 1000;
+        GAME.N_UPDATE_PERSEC = 1000; %put 60 for normal, put 1000 to bend time
         GAME.FRAME_DURATION = 1/GAME.N_UPDATE_PERSEC;
         
         TUBE.H_SPACE = 80;           % Horizontal spacing between two tubs
@@ -426,7 +393,7 @@ end
 %% --- Graphics Section ---
     function initWindow()
         % initWindow - initialize the main window, axes and image objects
-        MainFigureHdl = figure('Name', ['Flappy Bird ' GameVer], ...
+        MainFigureHdl = figure('Name', ['Flap AI ' GameVer], ...
             'NumberTitle' ,'off', ...
             'Units', 'pixels', ...
             'Position', [MainFigureInitPos, MainFigureSize], ...
@@ -563,9 +530,8 @@ end
         Tubes.ScreenX = Tubes.ScreenX - offset;
         if Tubes.ScreenX(Tubes.FrontP) <=-26
             Tubes.ScreenX(Tubes.FrontP) = Tubes.ScreenX(Tubes.FrontP) + 240;
-            x = linspace(.0001,.9999,20);
-            TubeChoice = x(randi(20));
-            Tubes.VOffset(Tubes.FrontP) = ceil(TubeChoice*105);
+            %Only run 20 different tubes
+            Tubes.VOffset(Tubes.FrontP) = ceil(rand*105);
             redrawTube(Tubes.FrontP);
             Tubes.FrontP = mod((Tubes.FrontP),3)+1;
             Flags.NextTubeReady = true;
