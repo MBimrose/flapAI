@@ -93,7 +93,7 @@ Best = 0;
 initVariables();
 initWindow();
 maxScore = 0;
-QRough = csvread('Q.csv'); %initialize blank Q matrix
+QRough = csvread('QShame.csv'); %initialize blank Q matrix
 [row,col] = size(QRough);
 Q = zeros(300,400,2); %Make Q matrix size to save initialization time
 for j = 1:row   %index 2D Q matrix to 3D
@@ -151,7 +151,7 @@ while 1
         if Flags.PreGame
             trial = trial + 1;
             Q(300,400,2) = trial;
-            csvwrite('Q.csv',Q); %save on beginning of run
+            csvwrite('QShame.csv',Q); %save on beginning of run
             processCPUBird;
             FlyKeyStatus = true; %avoid starting screen
             DeathIndex = true; %setup death index so it does not overwrite Q matrix values while dead
@@ -204,7 +204,7 @@ while 1
         curScoreString = sprintf('%d',(Score));
         set(ScoreInfoForeHdl, 'String', curScoreString);
         set(ScoreInfoBackHdl, 'String', curScoreString);
-        %drawnow; %comment out to accelerate learning
+        drawnow; %comment out to accelerate learning
         frame_updated = false;
         c = toc(stageStartTime);
         if ShowFPS
@@ -245,7 +245,7 @@ while 1
        
     if CloseReq    
         delete(MainFigureHdl);
-        csvwrite('Q.csv',Q);    %save on close request
+        csvwrite('QShame.csv',Q);    %save on close request
         clear all;
         return;
     end
