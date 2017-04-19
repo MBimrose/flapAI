@@ -94,6 +94,7 @@ initVariables();
 initWindow();
 QRough = csvread('Q.csv'); %initialize blank Q matrix
 [row,col] = size(QRough);
+Q = zeros(300,400,2);
 for j = 1:row
     for k = 1:col
         if k <= 400
@@ -112,11 +113,9 @@ if ShowFPS
     total_frame_update = 0;
 end
 
-% Show flash screen
-CurrentFrameNo = double(0);
-
-fade_time = cumsum([1 3 1]);
-
+% % Show flash screen
+% CurrentFrameNo = double(0);
+% fade_time = cumsum([1 3 1]);
 % pause(0.5);
 % logo_stl = text(72, 100, 'Stellari Studio', 'FontSize', 20, 'Color',[1 1 1], 'HorizontalAlignment', 'center');
 % logo_and = text(72, 130, 'and', 'FontSize', 10, 'Color',[1 1 1], 'HorizontalAlignment', 'center');
@@ -189,8 +188,10 @@ while 1
             end
         end
         if Flags.PreGame
+            csvwrite('Q.csv',Q);
             processCPUBird;
             FlyKeyStatus = true;
+            DeathIndex = true;
         else
             processBird;
             Bird.ScrollX = Bird.ScrollX + 1;
@@ -199,6 +200,9 @@ while 1
             end
         end
         addScore;
+        if Score == 0 && getxDist < 10  %fix scoring bug
+            Score = Score + 1;
+        end
         Bird.CurFrame = 3 - floor(double(mod(CurrentFrameNo, 9))/3);
 
       %% Cycling the Palette
@@ -212,10 +216,9 @@ while 1
        frame_updated = true;
        
        % If the bird has fallen to the ground
-       if Bird.ScreenPos(2) >= 200-5;
+       if Bird.ScreenPos(2) >= 200-5
             Bird.ScreenPos(2) = 200-5;
             gameover = true;
-            csvwrite('Q.csv',Q);
             if abs(Bird.Angle - pi/2) < 1e-3
                 fall_to_bottom = true;
             end
@@ -239,7 +242,7 @@ while 1
         curScoreString = sprintf('%d',(Score));
         set(ScoreInfoForeHdl, 'String', curScoreString);
         set(ScoreInfoBackHdl, 'String', curScoreString);
-        drawnow;
+        %drawnow;
         frame_updated = false;
         c = toc(stageStartTime);
         if ShowFPS
@@ -292,7 +295,7 @@ while 1
     ydist = getyDist();
     
     state=[xdist,ydist,isAlive]; %store state value
-    
+
     if xdist < 400 %set xindex for Q matrix
         xIndex = xdist + 1;
     end
@@ -309,6 +312,8 @@ while 1
         yIndexOld = statePrev(2) + 201;
     end
     
+    if DeathIndex
+    
     if statePrev(1) ~= state(1) || statePrev(2) ~= state(2) || statePrev(3) ~= state(3)
         %disp(state);
         %disp([xIndex,yIndex,xIndexOld,yIndexOld]);
@@ -321,13 +326,13 @@ while 1
         stateCount(xIndex,yIndex) = stateCount(xIndex,yIndex) + 1;
         alpha = 1/(1+stateCount(xIndex,yIndex));
         actionIndex = action + 1;
-        Qtemp = Q(xIndexOld, yIndexOld, actionIndex) + alpha * (R + max(Q(xIndex, yIndex, :)) - Q(xIndexOld,yIndexOld,actionIndex));
+        Qtemp = Q(xIndexOld, yIndexOld, actionIndex) + alpha * (R + max(Q(xIndex, yIndex,:)) - Q(xIndexOld,yIndexOld, actionIndex));
         %Qtemp = R + alpha * max(Q(xIndex,yIndex,:));
         if Qtemp <= 10000
             Q(xIndexOld, yIndexOld, actionIndex) = Qtemp;
         end
         
-        if Q(xIndex,yIndex,1) < Q(xIndex,yIndex,2)
+        if Q(xIndex,yIndex, 1) < Q(xIndex,yIndex,2)
             action = 1;
             FlyKeyStatus = true;
         else
@@ -336,8 +341,10 @@ while 1
     end
     if isAlive == 0
         FlyKeyStatus = true;
+        DeathIndex = false;
     end
     statePrev = state;
+    end
     %State is the state array, this will be fed into the learning
     %formula.
 end
@@ -371,7 +378,7 @@ end
         GAME.WINDOW_RES = [256 144];
         GAME.FLOOR_HEIGHT = 56;
         GAME.FLOOR_TOP_Y = GAME.RESOLUTION(1) - GAME.FLOOR_HEIGHT + 1;
-        GAME.N_UPDATE_PERSEC = 60;
+        GAME.N_UPDATE_PERSEC = 1000;
         GAME.FRAME_DURATION = 1/GAME.N_UPDATE_PERSEC;
         
         TUBE.H_SPACE = 80;           % Horizontal spacing between two tubs
@@ -556,7 +563,9 @@ end
         Tubes.ScreenX = Tubes.ScreenX - offset;
         if Tubes.ScreenX(Tubes.FrontP) <=-26
             Tubes.ScreenX(Tubes.FrontP) = Tubes.ScreenX(Tubes.FrontP) + 240;
-            Tubes.VOffset(Tubes.FrontP) = ceil(rand*105);
+            x = linspace(.0001,.9999,20);
+            TubeChoice = x(randi(20));
+            Tubes.VOffset(Tubes.FrontP) = ceil(TubeChoice*105);
             redrawTube(Tubes.FrontP);
             Tubes.FrontP = mod((Tubes.FrontP),3)+1;
             Flags.NextTubeReady = true;
