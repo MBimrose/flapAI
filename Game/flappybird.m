@@ -1,4 +1,4 @@
-function flappybird
+function flappybird(update,frameSkip,gamma)
 
 %% System Variables:
 GameVer = '1.0';          % The first full playable game
@@ -10,7 +10,7 @@ GAME.WINDOW_SCALE = 2;     % The actual size of the window divided by resolution
 GAME.FLOOR_TOP_Y = [];      % The y position of upper crust of the floor.
 GAME.N_UPDATES_PER_SEC = [];
 GAME.FRAME_DURATION = [];
-GAME.GRAVITY = 0.1356; %0.15; %0.2; %1356;  % empirical gravity constant
+GAME.GRAVITY = 0.1356; %NORMAL .1356 %0.15; %0.2; %1356;  % empirical gravity constant
 
 TUBE.MIN_HEIGHT = [];       % The minimum height of a tube
 TUBE.RANGE_HEIGHT = [];     % The range of the height of a tube
@@ -93,18 +93,18 @@ Best = 0;
 initVariables();
 initWindow();
 maxScore = 0;
-QRough = csvread('QShame.csv'); %initialize blank Q matrix
-[row,col] = size(QRough);
+% QRough = csvread('QShame2.csv'); %initialize blank Q matrix
+% [row,col] = size(QRough);
 Q = zeros(300,400,2); %Make Q matrix size to save initialization time
-for j = 1:row   %index 2D Q matrix to 3D
-    for k = 1:col
-        if k <= 400
-            Q(j,k,1) = QRough(j,k);
-        else
-            Q(j,k-400,2) = QRough(j,k);
-        end
-    end
-end
+% for j = 1:row   %index 2D Q matrix to 3D
+%     for k = 1:col
+%         if k <= 400
+%             Q(j,k,1) = QRough(j,k);
+%         else
+%             Q(j,k-400,2) = QRough(j,k);
+%         end
+%     end
+% end
 trial = Q(300,400,2);
 statePrev = [250, 0, 1]; %Initialize statePrev variable
 stateCount = zeros(300,400); %Initialize stateCount for alpha value
@@ -132,7 +132,7 @@ while 1
         while (curTime >= ((CurrentFrameNo) * GAME.FRAME_DURATION) && loops < GAME.MAX_FRAME_SKIP)
             if FlyKeyStatus  % If left key is pressed
                 if ~gameover
-                    Bird.SpeedY = -2.5; % -2.5;
+                    Bird.SpeedY = -2.5; % NORMAL: -2.5;
                     FlyKeyStatus = false;
                     Bird.LastHeight = Bird.ScreenPos(2);
                     if Flags.PreGame
@@ -151,7 +151,19 @@ while 1
             if Flags.PreGame
                 trial = trial + 1;
                 Q(300,400,2) = trial;
-                csvwrite('QShame.csv',Q); %save on beginning of run
+                if rem(trial,1000) == 0
+                    saveString = ['C:\Users\miles\Documents\MATLAB\Intro to Engineering Systems II\Project 1\flapAI\Game\QMatrix\' num2str(gamma) 'Q' num2str(trial) '.csv'];
+                    csvwrite(saveString,Q); %save on beginning of run
+                end
+                
+                if trial > 100000
+                    delete(MainFigureHdl);
+                    clear all;
+                    return;
+                end
+                trialScore(trial) = Score;
+                gammaString = [num2str(gamma) 'trialScore.mat'];
+                save(gammaString,'trialScore');
                 processCPUBird;
                 FlyKeyStatus = true; %avoid starting screen
                 DeathIndex = true; %setup death index so it does not overwrite Q matrix values while dead
@@ -159,7 +171,7 @@ while 1
                 processBird;
                 Bird.ScrollX = Bird.ScrollX + 1;
                 if ~gameover
-                    scrollTubes(1);
+                    scrollTubes(1); %NORMAL: 1
                 end
             end
             addScore;
@@ -188,13 +200,14 @@ while 1
                 xIndexOld = statePrev(1) + 1;
             end
             
-            if statePrev(2) >= -200 && ydist < 200 %set old y index for comparison
+            if statePrev(2) >= -200 && statePrev(2) < 200 %set old y index for comparison
                 yIndexOld = statePrev(2) + 201;
             end
             
             if DeathIndex
                 
                 if statePrev(1) ~= state(1) || statePrev(2) ~= state(2) || statePrev(3) ~= state(3)
+                    %disp(statePrev);
                     %disp(state);
                     disp(trial);
                     %disp([xIndex,yIndex,xIndexOld,yIndexOld]);
@@ -211,7 +224,7 @@ while 1
                     stateCount(xIndexOld,yIndexOld) = stateCount(xIndexOld,yIndexOld) + 1;
                     alpha = 1/(1+stateCount(xIndexOld,yIndexOld));
                     actionIndex = action + 1;
-                    Qtemp = Q(xIndexOld, yIndexOld, actionIndex) + alpha * (R + max(Q(xIndex, yIndex,:)) - Q(xIndexOld,yIndexOld, actionIndex));
+                    Qtemp = Q(xIndexOld, yIndexOld, actionIndex) + alpha * (R + gamma*max(Q(xIndex, yIndex,:)) - Q(xIndexOld,yIndexOld, actionIndex));
                     if Qtemp <= 10000
                         Q(xIndexOld, yIndexOld, actionIndex) = Qtemp;
                     end
@@ -222,12 +235,12 @@ while 1
                     else
                         action = 0;
                     end
+                    statePrev = state;
                 end
                 if isAlive == 0
                     FlyKeyStatus = true;
                     DeathIndex = false;
                 end
-                statePrev = state;
             end
             %State is the state array, this will be fed into the learning
             %formula.
@@ -308,7 +321,6 @@ while 1
         
         if CloseReq
             delete(MainFigureHdl);
-            csvwrite('QShame.csv',Q);    %save on close request
             clear all;
             return;
         end
@@ -338,12 +350,12 @@ end
 
     function initVariables()
         Sprites = load('sprites2.mat');
-        GAME.MAX_FRAME_SKIP = 5; %normal is 5, sped up is 10000
+        GAME.MAX_FRAME_SKIP = frameSkip; %normal is 5, sped up is 10000
         GAME.RESOLUTION = [256 144];
         GAME.WINDOW_RES = [256 144];
         GAME.FLOOR_HEIGHT = 56;
         GAME.FLOOR_TOP_Y = GAME.RESOLUTION(1) - GAME.FLOOR_HEIGHT + 1;
-        GAME.N_UPDATE_PERSEC = 60; %put 60 for normal, put 10000 to bend time
+        GAME.N_UPDATE_PERSEC = update; %put 60 for normal, put 10000 to bend time
         GAME.FRAME_DURATION = 1/GAME.N_UPDATE_PERSEC;
         
         TUBE.H_SPACE = 80;           % Horizontal spacing between two tubs
@@ -528,7 +540,6 @@ end
         Tubes.ScreenX = Tubes.ScreenX - offset;
         if Tubes.ScreenX(Tubes.FrontP) <=-26
             Tubes.ScreenX(Tubes.FrontP) = Tubes.ScreenX(Tubes.FrontP) + 240;
-            %Only run 20 different tubes
             Tubes.VOffset(Tubes.FrontP) = ceil(rand*105);
             redrawTube(Tubes.FrontP);
             Tubes.FrontP = mod((Tubes.FrontP),3)+1;
