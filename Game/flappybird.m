@@ -83,6 +83,7 @@ SinYPos = [];
 SinY = [];
 
 Score = 0;
+recordScore = 0;
 
 Tubes.FrontP = 1;              % 1-3
 Tubes.ScreenX = [300 380 460]-2; % The middle of each tube
@@ -93,7 +94,7 @@ Best = 0;
 initVariables();
 initWindow();
 maxScore = 0;
-% QRough = csvread('C:\Users\miles\Documents\MATLAB\Intro to Engineering Systems II\Project 1\flapAI\Game\QMatrix\1Q134000.csv'); %initialize blank Q matrix
+% QRough = csvread('C:\Users\miles\Documents\MATLAB\Intro to Engineering Systems II\Project 1\flapAI\Game\QMatrix\1Q8000.csv'); %initialize blank Q matrix
 % [row,col] = size(QRough);
 Q = zeros(300,400,2);
 % for j = 1:row   %index 2D Q matrix to 3D
@@ -151,7 +152,7 @@ while 1
         if Flags.PreGame
             trial = trial + 1;
             Q(300,400,2) = trial;
-            if rem(trial,1000) == 0
+            if rem(trial,250) == 0
                 saveString = ['C:\Users\miles\Documents\MATLAB\Intro to Engineering Systems II\Project 1\flapAI\Game\QMatrix\' num2str(gamma) 'Q' num2str(trial) '.csv'];
                 csvwrite(saveString,Q); %save on beginning of run
                 gammaString = [num2str(gamma) 'trialScore.csv'];
@@ -163,7 +164,8 @@ while 1
                 clear all;
                 return;
             end
-            trialScore(trial, 1) = Score;
+            trialScore(trial, 1) = recordScore;
+            recordScore = 0;
             processCPUBird;
             FlyKeyStatus = true; %avoid starting screen
             DeathIndex = true; %setup death index so it does not overwrite Q matrix values while dead
@@ -241,7 +243,7 @@ while 1
                    R = -1000;
                end
                stateCount(xIndex,yIndex) = stateCount(xIndex,yIndex) + 1;
-               alpha = 1/(1+stateCount(xIndex,yIndex));
+               alpha = 1;
                actionIndex = action + 1;
                Qtemp = Q(xIndexOld, yIndexOld, actionIndex) + alpha * (R + gamma*max(Q(xIndex, yIndex,:)) - Q(xIndexOld,yIndexOld, actionIndex));
                if Qtemp <= 10000
@@ -589,6 +591,7 @@ end
         if Tubes.ScreenX(Tubes.FrontP) < 40 && Flags.NextTubeReady
             Flags.NextTubeReady = false;
             Score = Score + 1;
+            recordScore = Score;
         end
     end
 
