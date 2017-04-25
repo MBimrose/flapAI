@@ -1,4 +1,4 @@
-function flappybird(alpha)
+function flappybirdDisplay(alphaInput, trialNum)
 
 %% System Variables:
 GameVer = '1.0';          % The first full playable game
@@ -10,8 +10,8 @@ GAME.WINDOW_SCALE = 2;     % The actual size of the window divided by resolution
 GAME.FLOOR_TOP_Y = [];      % The y position of upper crust of the floor.
 GAME.N_UPDATES_PER_SEC = [];
 GAME.FRAME_DURATION = [];
-GAME.GRAVITY = 0.1356; %0.15; %0.2; %1356;  % empirical gravity constant
-      
+GAME.GRAVITY = 0.1356; %NORMAL .1356 %0.15; %0.2; %1356;  % empirical gravity constant
+
 TUBE.MIN_HEIGHT = [];       % The minimum height of a tube
 TUBE.RANGE_HEIGHT = [];     % The range of the height of a tube
 TUBE.SUM_HEIGHT = [];       % The summed height of the upper and low tube
@@ -52,7 +52,7 @@ CloseReq = false;
 
 FlyKeyNames = {'space', 'return', 'uparrow', 'w'};
 FlyKeyStatus = false; %(size(FlyKeyNames));
-FlyKeyValid = true(size(FlyKeyNames));      % 
+FlyKeyValid = true(size(FlyKeyNames));      %
 %% Canvases:
 MainCanvas = [];
 
@@ -69,7 +69,7 @@ Bird.COLLIDE_MASK = [];
 Bird.INIT_SCREEN_POS = [45 100];                    % In [x y] order;
 Bird.WorldX = [];
 Bird.ScreenPos = [45 100]; %[45 100];   % Center = The 9th element horizontally (1based)
-                                     % And the 6th element vertically 
+% And the 6th element vertically
 Bird.SpeedXY = [ 0];
 Bird.Angle = 0;
 Bird.XGRID = [];
@@ -83,29 +83,28 @@ SinYPos = [];
 SinY = [];
 
 Score = 0;
-recordScore = 0;
 
 Tubes.FrontP = 1;              % 1-3
 Tubes.ScreenX = [300 380 460]-2; % The middle of each tube
-Tubes.VOffset = ceil(rand(1,3)*105); 
+Tubes.VOffset = ceil(rand(1,3)*105);
 
 Best = 0;
 %% -- Game Logic --
 initVariables();
 initWindow();
 maxScore = 0;
-% QRough = csvread('C:\Users\miles\Documents\MATLAB\Intro to Engineering Systems II\Project 1\flapAI\Game\QMatrix\1Q8000.csv'); %initialize blank Q matrix
-% [row,col] = size(QRough);
-Q = zeros(300,400,2);
-% for j = 1:row   %index 2D Q matrix to 3D
-%     for k = 1:col
-%         if k <= 400
-%             Q(j,k,1) = QRough(j,k);
-%         else
-%             Q(j,k-400,2) = QRough(j,k);
-%         end
-%     end
-% end
+QRough = csvread(['QMatrix\' alphaInput 'Q' num2str(trialNum) '.csv']); %initialize blank Q matrix
+[row,col] = size(QRough);
+Q = zeros(300,400,2); %Make Q matrix size to save initialization time
+for j = 1:row   %index 2D Q matrix to 3D
+    for k = 1:col
+        if k <= 400
+            Q(j,k,1) = QRough(j,k);
+        else
+            Q(j,k-400,2) = QRough(j,k);
+        end
+    end
+end
 trial = Q(300,400,2);
 statePrev = [250, 0, 1]; %Initialize statePrev variable
 stateCount = zeros(300,400); %Initialize stateCount for alpha value
@@ -118,247 +117,230 @@ end
 
 % Main Game
 while 1
-initGame();
-action = 0; %set action state to 0 for Q learning
-CurrentFrameNo = double(0);
-collide = false;
-fall_to_bottom = false;
-gameover = false;
-stageStartTime = tic;
-c = stageStartTime;
-FPS_lastTime = toc(stageStartTime);
-while 1
-    loops = 0;
-    curTime = toc(stageStartTime);
-    while (curTime >= ((CurrentFrameNo) * GAME.FRAME_DURATION) && loops < GAME.MAX_FRAME_SKIP)
-        if FlyKeyStatus  % If left key is pressed
-            if ~gameover
-                Bird.SpeedY = -2.5; % -2.5;
-                FlyKeyStatus = false;
-                Bird.LastHeight = Bird.ScreenPos(2);
-                if Flags.PreGame
-                    Flags.PreGame = false;                    
-                    set(BeginInfoHdl, 'Visible','off');
-                    set(ScoreInfoBackHdl, 'Visible','on');
-                    set(ScoreInfoForeHdl, 'Visible','on');
-                    Bird.ScrollX = 0;
+    initGame();
+    action = 0; %set action state to 0 for Q learning
+    CurrentFrameNo = double(0);
+    collide = false;
+    fall_to_bottom = false;
+    gameover = false;
+    stageStartTime = tic;
+    c = stageStartTime;
+    FPS_lastTime = toc(stageStartTime);
+    while 1
+        loops = 0;
+        curTime = toc(stageStartTime);
+        while (curTime >= ((CurrentFrameNo) * GAME.FRAME_DURATION) && loops < GAME.MAX_FRAME_SKIP)
+            if FlyKeyStatus  % If left key is pressed
+                if ~gameover
+                    Bird.SpeedY = -2.5; % NORMAL: -2.5;
+                    FlyKeyStatus = false;
+                    Bird.LastHeight = Bird.ScreenPos(2);
+                    if Flags.PreGame
+                        Flags.PreGame = false;
+                        set(BeginInfoHdl, 'Visible','off');
+                        set(ScoreInfoBackHdl, 'Visible','on');
+                        set(ScoreInfoForeHdl, 'Visible','on');
+                        Bird.ScrollX = 0;
+                    end
+                else
+                    if Bird.SpeedY < 0
+                        Bird.SpeedY = 0;
+                    end
                 end
+            end
+            if Flags.PreGame
+                trial = trial + 1;
+                Q(300,400,2) = trial;
+                trialScore(trial) = Score;
+                processCPUBird;
+                FlyKeyStatus = true; %avoid starting screen
+                DeathIndex = true; %setup death index so it does not overwrite Q matrix values while dead
             else
-                if Bird.SpeedY < 0
-                    Bird.SpeedY = 0;
+                processBird;
+                Bird.ScrollX = Bird.ScrollX + 1;
+                if ~gameover
+                    scrollTubes(1); %NORMAL: 1
+                end
+            end
+            addScore;
+            if Score == 0 && getxDist < 10  %fix scoring bug
+                Score = Score + 1;
+            end
+            Bird.CurFrame = 3 - floor(double(mod(CurrentFrameNo, 9))/3);
+            %% Q Learning
+            
+            isAlive=~gameover;
+            %isAlive is true if the bird is alive
+            xdist = getxDist();
+            ydist = getyDist();
+            
+            state=[xdist,ydist,isAlive]; %store state value
+            
+            if xdist < 400 %set xindex for Q matrix
+                xIndex = xdist + 1;
+            end
+            
+            if ydist >= -200 && ydist < 200 %set yindex for Q matrix
+                yIndex = ydist + 201;
+            end
+            
+            if statePrev(1) < 400 %set old x index for comparison
+                xIndexOld = statePrev(1) + 1;
+            end
+            
+            if statePrev(2) >= -200 && statePrev(2) < 200 %set old y index for comparison
+                yIndexOld = statePrev(2) + 201;
+            end
+            
+            if DeathIndex
+                
+                if statePrev(1) ~= state(1) || statePrev(2) ~= state(2) || statePrev(3) ~= state(3)
+                    %disp(statePrev);
+                    %disp(state);
+                    %disp(trial);
+                    %disp([xIndex,yIndex,xIndexOld,yIndexOld]);
+                    %disp(nnz(Q));
+                    %disp(maxScore);
+                    if isAlive
+                        R = 15;
+                    else
+                        R = -1000;
+                    end
+                    stateCount(xIndexOld,yIndexOld) = stateCount(xIndexOld,yIndexOld) + 1;
+                    alpha = 1/(1+stateCount(xIndexOld,yIndexOld));
+                    actionIndex = action + 1;
+                    Qtemp = Q(xIndexOld, yIndexOld, actionIndex) + alpha * (R + 1*max(Q(xIndex, yIndex,:)) - Q(xIndexOld,yIndexOld, actionIndex));
+                    if Qtemp <= 10000
+                        Q(xIndexOld, yIndexOld, actionIndex) = Qtemp;
+                    end
+                    
+                    if Q(xIndex,yIndex, 1) < Q(xIndex,yIndex,2)
+                        action = 1;
+                        FlyKeyStatus = true;
+                    else
+                        action = 0;
+                    end
+                    statePrev = state;
+                end
+                if isAlive == 0
+                    FlyKeyStatus = true;
+                    DeathIndex = false;
+                end
+            end
+            %State is the state array, this will be fed into the learning
+            %formula.
+            %% Cycling the Palette
+            % Update the cycle variables
+            collide = isCollide();
+            if collide
+                gameover = true;
+            end
+            CurrentFrameNo = CurrentFrameNo + 1;
+            loops = loops + 1;
+            frame_updated = true;
+            
+            % If the bird has fallen to the ground
+            if Bird.ScreenPos(2) >= 200-5
+                Bird.ScreenPos(2) = 200-5;
+                gameover = true;
+                if abs(Bird.Angle - pi/2) < 1e-3
+                    fall_to_bottom = true;
                 end
             end
         end
-        if Flags.PreGame
-            trial = trial + 1;
-            Q(300,400,2) = trial;
-            if rem(trial,1000) == 0
-                saveString = ['QMatrix\Overnight.75\' num2str(alpha) 'Q' num2str(trial) '.csv'];
-                csvwrite(saveString,Q); %save on beginning of run
-                alphaString = ['QMatrix\Overnight.75\trialScore' num2str(alpha) '.csv'];
-                csvwrite(alphaString, trialScore);
+        
+        %% Redraw the frame if the world has been processed
+        if frame_updated
+            %         drawToMainCanvas();
+            set(MainCanvasHdl, 'CData', MainCanvas(1:200,:,:));
+            %         Bird.Angle = double(mod(CurrentFrameNo,360))*pi/180;
+            if fall_to_bottom
+                Bird.CurFrame = 2;
             end
-            
-            if trial > 1000000
-                delete(MainFigureHdl);
-                clear all;
-                return;
+            refreshBird();
+            refreshTubes();
+            if (~gameover)
+                refreshFloor(CurrentFrameNo);
             end
-            trialScore(trial, 1) = recordScore;
-            recordScore = 0;
-            processCPUBird;
-            FlyKeyStatus = true; %avoid starting screen
-            DeathIndex = true; %setup death index so it does not overwrite Q matrix values while dead
-        else
-            processBird;
-            Bird.ScrollX = Bird.ScrollX + 1;
-            if ~gameover
-                scrollTubes(1);
+            curScoreString = sprintf('%d',(Score));
+            set(ScoreInfoForeHdl, 'String', curScoreString);
+            set(ScoreInfoBackHdl, 'String', curScoreString);
+            drawnow; %comment out to accelerate learning
+            frame_updated = false;
+            c = toc(stageStartTime);
+            if ShowFPS
+                total_frame_update = total_frame_update + 1;
+                varname = 'collide';%'Mario.curFrame';
+                if mod(total_frame_update,SHOWFPS_FRAMES) == 0 % If time to update fps
+                    set(fps_text_handle, 'String',sprintf('FPS: %.2f',SHOWFPS_FRAMES./(c-FPS_lastTime)));
+                    FPS_lastTime = toc(stageStartTime);
+                end
+                set(var_text_handle, 'String', sprintf('%s = %.2f', varname, eval(varname)));
             end
         end
-        addScore;
-        if Score == 0 && getxDist < 10  %fix scoring bug
-            Score = Score + 1;
-        end
-        Bird.CurFrame = 3 - floor(double(mod(CurrentFrameNo, 9))/3);
-
-      %% Cycling the Palette
-        % Update the cycle variables
-       collide = isCollide();
-       if collide
-           gameover = true;
-       end
-       CurrentFrameNo = CurrentFrameNo + 1;
-       loops = loops + 1;
-       frame_updated = true;
-       
-       % If the bird has fallen to the ground
-       if Bird.ScreenPos(2) >= 200-5
-            Bird.ScreenPos(2) = 200-5;
-            gameover = true;
-            if abs(Bird.Angle - pi/2) < 1e-3
-                fall_to_bottom = true;
-            end
-       end
-       
-       %% Q Learning
-       
-       isAlive=~gameover;
-       %isAlive is true if the bird is alive
-       xdist = getxDist();
-       ydist = getyDist();
-       
-       state=[xdist,ydist,isAlive]; %store state value
-       
-       if xdist < 400 %set xindex for Q matrix
-           xIndex = xdist + 1;
-       end
-       
-       if ydist >= -200 && ydist < 200 %set yindex for Q matrix
-           yIndex = ydist + 201;
-       end
-       
-       if statePrev(1) < 400 %set old x index for comparison
-           xIndexOld = statePrev(1) + 1;
-       end
-       
-       if statePrev(2) >= -200 && ydist < 200 %set old y index for comparison
-           yIndexOld = statePrev(2) + 201;
-       end
-       
-       if DeathIndex
-           
-           if statePrev(1) ~= state(1) || statePrev(2) ~= state(2) || statePrev(3) ~= state(3)
-               %disp(state);
-               disp(trial);
-               %disp([xIndex,yIndex,xIndexOld,yIndexOld]);
-               %disp(nnz(Q));
-               if maxScore < Score
-                   maxScore = Score;
-               end
-               disp(maxScore);
-               if isAlive
-                   R = 15;
-               else
-                   R = -1000;
-               end
-               stateCount(xIndex,yIndex) = stateCount(xIndex,yIndex) + 1;
-               actionIndex = action + 1;
-               Qtemp = Q(xIndexOld, yIndexOld, actionIndex) + alpha * (R + max(Q(xIndex, yIndex,:)) - Q(xIndexOld,yIndexOld, actionIndex));
-               if Qtemp <= 10000
-                   Q(xIndexOld, yIndexOld, actionIndex) = Qtemp;
-               end
-               
-               if Q(xIndex,yIndex, 1) < Q(xIndex,yIndex,2)
-                   action = 1;
-                   FlyKeyStatus = true;
-               else
-                   action = 0;
-               end
-           end
-           if isAlive == 0
-               FlyKeyStatus = true;
-               DeathIndex = false;
-           end
-           statePrev = state;
-       end
-       %State is the state array, this will be fed into the learning
-       %formula.
-    end
-    
-    %% Redraw the frame if the world has been processed
-    if frame_updated
-%         drawToMainCanvas();
-        set(MainCanvasHdl, 'CData', MainCanvas(1:200,:,:));
-%         Bird.Angle = double(mod(CurrentFrameNo,360))*pi/180;
         if fall_to_bottom
-            Bird.CurFrame = 2;
-        end
-        refreshBird();
-        refreshTubes();
-        if (~gameover)
-            refreshFloor(CurrentFrameNo);
-        end
-        curScoreString = sprintf('%d',(Score));
-        set(ScoreInfoForeHdl, 'String', curScoreString);
-        set(ScoreInfoBackHdl, 'String', curScoreString);
-        %drawnow; %comment out to accelerate learning
-        frame_updated = false;
-        c = toc(stageStartTime);
-        if ShowFPS
-            total_frame_update = total_frame_update + 1;
-            varname = 'collide';%'Mario.curFrame';
-            if mod(total_frame_update,SHOWFPS_FRAMES) == 0 % If time to update fps
-                set(fps_text_handle, 'String',sprintf('FPS: %.2f',SHOWFPS_FRAMES./(c-FPS_lastTime)));
-                FPS_lastTime = toc(stageStartTime);
-            end
-            set(var_text_handle, 'String', sprintf('%s = %.2f', varname, eval(varname)));
-        end
-    end
-    if fall_to_bottom
-        if Score > Best
-            Best = Score;
-            
-            for i_save = 1:4     % Try saving four times if error occurs
-                try
-                    save sprites2.mat Best -append
-                    break;
-                catch
-                    continue;
+            if Score > Best
+                Best = Score;
+                
+                for i_save = 1:4     % Try saving four times if error occurs
+                    try
+                        save sprites2.mat Best -append
+                        break;
+                    catch
+                        continue;
+                    end
+                end     % If the error still persist even after four saves, then
+                if i_save == 4
+                    disp('FLAPPY_BIRD: Can''t save high score');
                 end
-            end     % If the error still persist even after four saves, then
-            if i_save == 4
-                disp('FLAPPY_BIRD: Can''t save high score'); 
+            end
+            score_report = {sprintf('Score: %d', Score), sprintf('Best: %d', Best)};
+            set(ScoreInfoHdl, 'Visible','on', 'String', score_report);
+            set(GameOverHdl, 'Visible','on');
+            save sprites2.mat Best -append
+            if FlyKeyStatus
+                FlyKeyStatus = false;
+                break;
             end
         end
-        score_report = {sprintf('Score: %d', Score), sprintf('Best: %d', Best)};
-        set(ScoreInfoHdl, 'Visible','on', 'String', score_report);
-        set(GameOverHdl, 'Visible','on');
-        save sprites2.mat Best -append
-        if FlyKeyStatus
-            FlyKeyStatus = false;
-            break;
+        
+        if CloseReq
+            delete(MainFigureHdl);
+            clear all;
+            return;
         end
     end
-       
-    if CloseReq    
-        delete(MainFigureHdl);
-        %csvwrite('QShame',Q);    %save on close request
-        clear all;
-        return;
-    end
 end
-end
-%% Get AI Constants    
+%% Get AI Constants
 %The constants come from the widths of the pipes
-function xdist = getxDist()
-    if (Tubes.ScreenX(Tubes.FrontP)) >= 21
-        xdist=round(Tubes.ScreenX(Tubes.FrontP)-45)+24;
-    elseif (Tubes.ScreenX(Tubes.FrontP)) < 21
-        xdist=round(Tubes.ScreenX(Tubes.FrontP))+83;
+    function xdist = getxDist()
+        if (Tubes.ScreenX(Tubes.FrontP)) >= 21
+            xdist=ceil(Tubes.ScreenX(Tubes.FrontP)-45)+24;
+        elseif (Tubes.ScreenX(Tubes.FrontP)) < 21
+            xdist=ceil(Tubes.ScreenX(Tubes.FrontP))+83;
+        end
     end
-end
 %xdist is the horizontal distance to the BACK EDGE of the next pipe
 
-function ydist = getyDist()
-    if (Tubes.ScreenX(Tubes.FrontP)) >= 21
-        ydist=round((177-(Tubes.VOffset(Tubes.FrontP)-1))-Bird.ScreenPos(2));
-    elseif (Tubes.ScreenX(Tubes.FrontP) < 21) && (Tubes.FrontP == 3)
-        ydist=round((177-(Tubes.VOffset(1)))-Bird.ScreenPos(2));
-    else
-        ydist=round((177-(Tubes.VOffset(Tubes.FrontP+1)))-Bird.ScreenPos(2));
+    function ydist = getyDist()
+        if (Tubes.ScreenX(Tubes.FrontP)) >= 21
+            ydist=ceil((177-(Tubes.VOffset(Tubes.FrontP)-1))-Bird.ScreenPos(2));
+        elseif (Tubes.ScreenX(Tubes.FrontP) < 21) && (Tubes.FrontP == 3)
+            ydist=ceil((177-(Tubes.VOffset(1)))-Bird.ScreenPos(2));
+        else
+            ydist=ceil((177-(Tubes.VOffset(Tubes.FrontP+1)))-Bird.ScreenPos(2));
+        end
+        %ydist is the vertical distance from the bottom of the next tube
     end
-%ydist is the vertical distance from the bottom of the next tube
-end
 
     function initVariables()
         Sprites = load('sprites2.mat');
-        GAME.MAX_FRAME_SKIP = 5;
+        GAME.MAX_FRAME_SKIP = 5; %normal is 5, sped up is 10000
         GAME.RESOLUTION = [256 144];
         GAME.WINDOW_RES = [256 144];
         GAME.FLOOR_HEIGHT = 56;
         GAME.FLOOR_TOP_Y = GAME.RESOLUTION(1) - GAME.FLOOR_HEIGHT + 1;
-        GAME.N_UPDATE_PERSEC = 10000; %put 60 for normal, put 1000 to bend time
+        GAME.N_UPDATE_PERSEC = 60; %put 60 for normal, put 10000 to bend time
         GAME.FRAME_DURATION = 1/GAME.N_UPDATE_PERSEC;
         
         TUBE.H_SPACE = 80;           % Horizontal spacing between two tubs
@@ -387,7 +369,7 @@ end
         FloorAxesSize = [144 56];
         %% Canvases:
         MainCanvas = uint8(zeros([GAME.RESOLUTION 3]));
-                
+        
         bird_size = Sprites.Bird.Size;
         [Bird.XGRID, Bird.YGRID] = meshgrid([-ceil(bird_size(2)/2):floor(bird_size(2)/2)], ...
             [ceil(bird_size(1)/2):-1:-floor(bird_size(1)/2)]);
@@ -446,8 +428,8 @@ end
         TubeSpriteHdl = zeros(1,3);
         for i = 1:3
             TubeSpriteHdl(i) = image([0 26-1], [0 304-1], [],...
-            'Parent', MainAxesHdl,...
-            'Visible', 'on');
+                'Parent', MainAxesHdl,...
+                'Visible', 'on');
         end
         
         
@@ -474,19 +456,19 @@ end
             'FontName', 'Helvetica', 'FontSize', 20, 'FontWeight', 'Bold', 'HorizontalAlignment', 'center','Color',[1 1 1], 'Visible', 'off');
     end
     function initGame()
-                % The scroll layer for the tubes
+        % The scroll layer for the tubes
         TubeLayer.Alpha = false([GAME.RESOLUTION.*[1 2] 3]);
         TubeLayer.CData = uint8(zeros([GAME.RESOLUTION.*[1 2] 3]));
-
+        
         Bird.Angle = 0;
         Score = 0;
         %TubeLayer.Alpha(GAME.FLOOR_TOP_Y:GAME.RESOLUTION(1), :, :) = true;
         Flags.ResetFloorTexture = true;
         SinYPos = 1;
         Flags.PreGame = true;
-%         scrollTubeLayer(GAME.RESOLUTION(2));   % Do it twice to fill the
-%         disp('mhaha');
-%         scrollTubeLayer(GAME.RESOLUTION(2));   % Entire tube layer
+        %         scrollTubeLayer(GAME.RESOLUTION(2));   % Do it twice to fill the
+        %         disp('mhaha');
+        %         scrollTubeLayer(GAME.RESOLUTION(2));   % Entire tube layer
         drawToMainCanvas();
         set(MainCanvasHdl, 'CData', MainCanvas);
         set(BeginInfoHdl, 'Visible','on');
@@ -543,7 +525,6 @@ end
         Tubes.ScreenX = Tubes.ScreenX - offset;
         if Tubes.ScreenX(Tubes.FrontP) <=-26
             Tubes.ScreenX(Tubes.FrontP) = Tubes.ScreenX(Tubes.FrontP) + 240;
-            %Only run 20 different tubes
             Tubes.VOffset(Tubes.FrontP) = ceil(rand*105);
             redrawTube(Tubes.FrontP);
             Tubes.FrontP = mod((Tubes.FrontP),3)+1;
@@ -558,7 +539,7 @@ end
             set(TubeSpriteHdl(i), 'XData', Tubes.ScreenX(i) + [0 26-1]);
         end
     end
-    
+
     function refreshFloor(frameNo)
         offset = mod(frameNo, 24);
         set(FloorSpriteHdl, 'XData', -offset);
@@ -585,12 +566,11 @@ end
         end
         return;
     end
-    
+
     function addScore()
         if Tubes.ScreenX(Tubes.FrontP) < 40 && Flags.NextTubeReady
             Flags.NextTubeReady = false;
             Score = Score + 1;
-            recordScore = Score;
         end
     end
 
@@ -608,8 +588,8 @@ end
             'CData', Sprites.Bird.CDataNan(:,:,:, Bird.CurFrame));
     end
 %% -- Display Infos --
-    
-        
+
+
 %% -- Callbacks --
     function stl_KeyUp(hObject, eventdata, handles)
         key = get(hObject,'CurrentKey');
@@ -628,8 +608,8 @@ end
     function stl_KeyPressFcn(hObject, eventdata, handles)
         curKey = get(hObject, 'CurrentKey');
         switch true
-            case strcmp(curKey, 'escape') 
-                CloseReq = true;            
+            case strcmp(curKey, 'escape')
+                CloseReq = true;
         end
     end
     function stl_CloseReqFcn(hObject, eventdata, handles)
