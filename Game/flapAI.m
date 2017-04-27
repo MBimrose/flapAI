@@ -22,7 +22,7 @@ function varargout = flapAI(varargin)
 
 % Edit the above text to modify the response to help flapAI
 
-% Last Modified by GUIDE v2.5 25-Apr-2017 12:12:11
+% Last Modified by GUIDE v2.5 26-Apr-2017 10:53:38
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -62,7 +62,7 @@ guidata(hObject, handles);
 % uiwait(handles.runButton);
 
 plotFlappy(handles);
-
+graphQ(handles,'QBlank.csv');
 
 % --- Outputs from this function are returned to the command line.
 function varargout = flapAI_OutputFcn(hObject, eventdata, handles) 
@@ -134,9 +134,15 @@ function trialText_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of trialText as text
 %        str2double(get(hObject,'String')) returns contents of trialText as a double
 roundTrialText = round(str2double(handles.trialText.String),-2);
+if roundTrialText > 150000
+    roundTrialText = 150000;
+elseif roundTrialText < 0
+    roundTrialText = 0;
+end
 handles.trialText.String = num2str(roundTrialText);
 handles.trialSlider.Value = str2double(handles.trialText.String);
 plotFlappy(handles);
+
 
 % --- Executes during object creation, after setting all properties.
 function trialText_CreateFcn(hObject, eventdata, handles)
@@ -151,9 +157,9 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in pushbutton1.
-function pushbutton1_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton1 (see GCBO)
+% --- Executes on button press in runButton.
+function runButton_Callback(hObject, eventdata, handles)
+% hObject    handle to runButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 switch handles.alphaValue.Value
@@ -170,5 +176,21 @@ switch handles.alphaValue.Value
 end
 
 trialNum = round(handles.trialSlider.Value,-2);
+plotFlappy(handles);
 
-flappybirdDisplay(alphaInput,trialNum);
+for i = 1:trialNum/100
+    MatrixName = (['QMatrix\' alphaInput 'Q' num2str(i*100) '.csv']);
+    graphQ(handles,MatrixName);
+    drawnow
+end
+
+flappybirdDisplay(alphaInput,trialNum,false);
+
+% --- Executes on button press in bestRunButton.
+function bestRunButton_Callback(hObject, eventdata, handles)
+% hObject    handle to bestRunButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+graphQ(handles,'QMatrix\0.75Q18200.csv');
+flappybirdDisplay('0.75',18200,true);

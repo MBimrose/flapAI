@@ -1,4 +1,4 @@
-function flappybird(alpha)
+function flappybird(alpha,bestRun)
 
 %% System Variables:
 GameVer = '1.0';          % The first full playable game
@@ -94,18 +94,18 @@ Best = 0;
 initVariables();
 initWindow();
 maxScore = 0;
-% QRough = csvread('C:\Users\miles\Documents\MATLAB\Intro to Engineering Systems II\Project 1\flapAI\Game\QMatrix\1Q8000.csv'); %initialize blank Q matrix
-% [row,col] = size(QRough);
+QRough = csvread('MaxQ\0.75Q17100.csv'); %initialize blank Q matrix
+[row,col] = size(QRough);
 Q = zeros(300,400,2);
-% for j = 1:row   %index 2D Q matrix to 3D
-%     for k = 1:col
-%         if k <= 400
-%             Q(j,k,1) = QRough(j,k);
-%         else
-%             Q(j,k-400,2) = QRough(j,k);
-%         end
-%     end
-% end
+for j = 1:row   %index 2D Q matrix to 3D
+    for k = 1:col
+        if k <= 400
+            Q(j,k,1) = QRough(j,k);
+        else
+            Q(j,k-400,2) = QRough(j,k);
+        end
+    end
+end
 trial = Q(300,400,2);
 statePrev = [250, 0, 1]; %Initialize statePrev variable
 stateCount = zeros(300,400); %Initialize stateCount for alpha value
@@ -152,10 +152,10 @@ while 1
         if Flags.PreGame
             trial = trial + 1;
             Q(300,400,2) = trial;
-            if rem(trial,1000) == 0
-                saveString = ['QMatrix\Overnight.75\' num2str(alpha) 'Q' num2str(trial) '.csv'];
+            if rem(trial,100) == 0
+                saveString = ['MaxQ\' num2str(alpha) 'Q' num2str(trial) '.csv'];
                 csvwrite(saveString,Q); %save on beginning of run
-                alphaString = ['QMatrix\Overnight.75\trialScore' num2str(alpha) '.csv'];
+                alphaString = ['MaxQ\trialScore' num2str(alpha) '.csv'];
                 csvwrite(alphaString, trialScore);
             end
             
@@ -247,11 +247,20 @@ while 1
                Qtemp = Q(xIndexOld, yIndexOld, actionIndex) + alpha * (R + max(Q(xIndex, yIndex,:)) - Q(xIndexOld,yIndexOld, actionIndex));
                if Qtemp <= 10000
                    Q(xIndexOld, yIndexOld, actionIndex) = Qtemp;
+               else
+                   Q(xIndexOld, yIndexOld, actionIndex) = 10000;
                end
                
                if Q(xIndex,yIndex, 1) < Q(xIndex,yIndex,2)
-                   action = 1;
-                   FlyKeyStatus = true;
+                   if state(2) < 40 && bestRun
+                       action = 1;
+                       FlyKeyStatus = true;
+                   elseif ~bestRun
+                       action = 1;
+                       FlyKeyStatus = true;
+                   else
+                       action = 0;
+                   end
                else
                    action = 0;
                end

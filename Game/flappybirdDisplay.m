@@ -1,4 +1,4 @@
-function flappybirdDisplay(alphaInput, trialNum)
+function flappybirdDisplay(alphaInput, trialNum, bestRun)
 
 %% System Variables:
 GameVer = '1.0';          % The first full playable game
@@ -215,8 +215,15 @@ while 1
                     end
                     
                     if Q(xIndex,yIndex, 1) < Q(xIndex,yIndex,2)
-                        action = 1;
-                        FlyKeyStatus = true;
+                        if state(2) < 40 && bestRun
+                            action = 1;
+                            FlyKeyStatus = true;
+                        elseif ~bestRun
+                            action = 1;
+                            FlyKeyStatus = true;
+                        else
+                            action = 0;
+                        end
                     else
                         action = 0;
                     end
@@ -362,7 +369,7 @@ end
         MainAxesHdl = [];
         
         %% Game Parameters
-        MainFigureInitPos = [500 100];
+        MainFigureInitPos = [100 240];
         MainFigureSize = GAME.WINDOW_RES([2 1]).*2;
         MainAxesInitPos = [0 0]; %[0.1 0.1]; % The initial position of the axes IN the figure
         MainAxesSize = [144 200]; % GAME.WINDOW_RES([2 1]);
