@@ -62,7 +62,7 @@ guidata(hObject, handles);
 % uiwait(handles.runButton);
 
 plotFlappy(handles);
-graphQ(handles,'QBlank.csv');
+graphQ(handles,'QMatrix\QBlank.csv');
 
 % --- Outputs from this function are returned to the command line.
 function varargout = flapAI_OutputFcn(hObject, eventdata, handles) 
