@@ -93,7 +93,7 @@ Best = 0;
 initVariables();
 initWindow();
 maxScore = 0;
-QRough = csvread(['QMatrix\' alphaInput 'Q' num2str(trialNum) '.csv']); %initialize blank Q matrix
+QRough = csvread([alphaInput 'Q' num2str(trialNum) '.csv']); %initialize blank Q matrix
 [row,col] = size(QRough);
 Q = zeros(300,400,2); %Make Q matrix size to save initialization time
 for j = 1:row   %index 2D Q matrix to 3D

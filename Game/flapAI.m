@@ -62,7 +62,7 @@ guidata(hObject, handles);
 % uiwait(handles.runButton);
 
 plotFlappy(handles);
-graphQ(handles,'QMatrix\QBlank.csv');
+graphQ(handles,'QBlank.csv');
 
 % --- Outputs from this function are returned to the command line.
 function varargout = flapAI_OutputFcn(hObject, eventdata, handles) 
@@ -179,7 +179,7 @@ trialNum = round(handles.trialSlider.Value,-2);
 plotFlappy(handles);
 
 for i = 1:trialNum/100
-    MatrixName = (['QMatrix\' alphaInput 'Q' num2str(i*100) '.csv']);
+    MatrixName = ([alphaInput 'Q' num2str(i*100) '.csv']);
     graphQ(handles,MatrixName);
     drawnow
 end
@@ -192,5 +192,5 @@ function bestRunButton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-graphQ(handles,'QMatrix\0.75Q18200.csv');
+graphQ(handles,'0.75Q18200.csv');
 flappybirdDisplay('0.75',18200,true);
